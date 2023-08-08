@@ -17,5 +17,13 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# VIM (RIP Bram - you are remembered)
+*.swp
+*.swo
+*.swn
+
+# don't want to commit the binaries
+bin
+
 # Go workspace file
 go.work
