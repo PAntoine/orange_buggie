@@ -36,16 +36,16 @@ func CreateWordGraph () *WordGraph {
 	return result
 }
 
-func (w *WordGraph) AddWord(word []uint8) {
-	var current = w.tree
+func (w *WordGraph) AddWord(word []uint8) *graph_node.GraphNode {
+	var result = w.tree
 
 	// add the bytes from the word to the tree.
 	for _, value := range(word) {
-		current = current.AddFindChild(value)
+		result = result.AddFindChild(value)
 	}
 
 	// Ok, this is a terminating node.
-	current.SetTerminates()
+	result.SetTerminates()
 
 	// If the entry does not exist, will need to add a list there
 	if w.ends[word[len(word)-1]] == nil {
@@ -53,10 +53,12 @@ func (w *WordGraph) AddWord(word []uint8) {
 	}
 
 	// Add the new node to the end of the array
-	w.ends[word[len(word)-1]] = append(w.ends[word[len(word)-1]], current)
+	w.ends[word[len(word)-1]] = append(w.ends[word[len(word)-1]], result)
+
+	return result
 }
 
-func (w WordGraph) FindWord(word []uint8) bool {
+func (w WordGraph) FindWord(word []uint8, parts *uint16) bool {
 	var current = w.tree
 
 	for _, value := range(word) {
@@ -69,5 +71,9 @@ func (w WordGraph) FindWord(word []uint8) bool {
 
 	// if current is not nil and the node is a terminating node, then 
 	// we found the word.
+	if current != nil && current.IsTerminal() {
+		*parts = current.GetParts()
+	}
+
 	return current != nil && current.IsTerminal()
 }

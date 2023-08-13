@@ -1,0 +1,18 @@
+{
+        "dictionary":
+        {
+                "language": "en",
+                "words": {
+                        "a": { "parts": [ "preposition" ] },
+                        "though" : {},
+                        "thought" : {},
+                        "the" : {},
+                        "that" : {},
+                        "walk": { "parts": [ "verb" ] },
+                        "dog": { "parts": [ "noun", "verb" ] },
+                        "cat": { "parts": [ "noun" ] },
+                        "ing": { "parts": [ "verb" ], "is_suffix" : true },
+                        "ed": { "parts": [ "verb" ], "is_suffix" : true }
+                }
+        }
+}

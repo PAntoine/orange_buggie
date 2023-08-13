@@ -16,6 +16,7 @@ type GraphNode struct {
 	parent		*GraphNode;
 	children	map [uint8] *GraphNode;
 	terminates	bool;
+	parts		uint16;
 }
 
 func CreateNode (parent *GraphNode) *GraphNode {
@@ -27,6 +28,14 @@ func CreateNode (parent *GraphNode) *GraphNode {
 
 func (g *GraphNode) SetTerminates() {
 	g.terminates = true
+}
+
+func (g *GraphNode) SetParts(parts uint16) {
+	g.parts = parts
+}
+
+func (g GraphNode) GetParts() uint16 {
+	return g.parts
 }
 
 func (g GraphNode) IsTerminal() bool {

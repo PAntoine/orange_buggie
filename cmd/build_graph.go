@@ -15,24 +15,11 @@ import "fmt"
 import "orange_buggie/source/word_graph"
 
 func main() {
-	fmt.Println("-----")
-
-//	var meh = graph_node.CreateNode(nil)
-//
-//	var a = meh.AddFindChild(12)
-//	var b = a.AddFindChild(12)
-//	var c = b.AddFindChild(13)
-//	c.AddFindChild(10)
-//
-//	fmt.Println("==========")
-//	x,d := meh.WalkTree([]uint8{12,12,13,10})
-//	fmt.Println("====##====")
-//
-//	fmt.Println(x,d)
-
 	var meh = word_graph.CreateWordGraph()
-	meh.AddWord(([]uint8{12,12,13,10}))
 
-	fmt.Println(meh.FindWord([]uint8{12,12,13,10}))
-	fmt.Println(meh.FindWord([]uint8{12,12,01,10}))
+	meh.LoadGraph("test_data/test_dictionary.json")
+
+	var parts uint16
+	fmt.Println(meh.FindWord([]byte("dog"), &parts), parts)
+	fmt.Println(meh.FindWord([]byte("cat"), &parts), parts)
 }
