@@ -108,6 +108,7 @@ func TestGetNameFromData(t* testing.T) {
 
 func TestParseGrammarLineEndings(t *testing.T) {
 	lm := CreateLanguageModel()
+	lm.AddToken("test")
 
 	test_cases := [][]byte{
 				[]byte{110,97,109,101,49,48,61,116,101,115,116,0x0a},
@@ -121,8 +122,8 @@ func TestParseGrammarLineEndings(t *testing.T) {
 
 	for _, array := range(test_cases) {
 		line_number := 0
-		if _, ok := lm.parseClauseList(array, line_number, 0); !ok {
-			t.Logf("Failed to properly decode line endings.")
+		if _, clauses, ln, _ := lm.parseClauseLine(array, line_number, 0); len(clauses) == 0 {
+			t.Logf("Failed to properly decode line endings. %d", ln)
 			t.Logf("test case: %s", array)
 			t.Fail()
 		}
@@ -131,6 +132,9 @@ func TestParseGrammarLineEndings(t *testing.T) {
 
 func TestParseGrammar(t *testing.T) {
 	lm := CreateLanguageModel()
+
+	lm.AddToken("test")
+	lm.AddToken("test1")
 
 	test_cases := []string {
 			"name1= test\n",
@@ -146,15 +150,15 @@ func TestParseGrammar(t *testing.T) {
 
 	for _, line := range(test_cases) {
 		line_number := 0
-		if _, ok := lm.parseClauseList([]byte(line), line_number, 0); !ok {
-			t.Logf("Failed to parse name, test case: %s", line)
+		if _, clauses, _, _ := lm.parseClauseLine([]byte(line), line_number, 0); len(clauses) < 1 {
+			t.Logf("Failed to parse name, test case: '%s' %d", line, len(clauses))
 			t.Fail()
 		}
 	}
 
 	line_number := 0
 	negative_test := "name4 name = test\n"
-	if _, ok := lm.parseClauseList([]byte(negative_test), line_number, 0); ok {
+	if _, clauses, _, _ := lm.parseClauseLine([]byte(negative_test), line_number, 0); len(clauses) != 0 {
 		t.Logf("Parsed a line it should not, test case: %s", negative_test)
 		t.Fail()
 	}
@@ -180,9 +184,12 @@ func TestParseTokenSection(t *testing.T) {
 }
 
 func TestLoadLanguageModel(t *testing.T) {
-	test_model := "name_name = {test} [test1]\n\n\nname_name1=test\n"
+	test_model := "%rules\nname_name = {test} [test1]\n\n\nname_name1=test\n"
 
 	lm := CreateLanguageModel()
+	lm.AddToken("test")
+	lm.AddToken("test1")
+
 	line_number := 0
 	if clauses, worked := lm.parseClauseList([]byte(test_model), line_number, 0); !worked {
 		t.Logf("Failed to parse the grammer.")

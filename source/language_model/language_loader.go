@@ -83,6 +83,97 @@ func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int,
 	return index, line_number, worked
 }
 
+func (l *LanguageModel) parseClauseList(data []byte, line_number int, index int) (clause_set, bool) {
+	clauses := make(clause_set)
+	worked  := true
+
+	if index, line_number, worked = findDirectiveSection(data, index, line_number, "rules"); worked {
+		for index < len(data) {
+
+			for {
+				var found bool
+				index = eatWhiteSpace(data, index)
+				if  found, index = isLineEnding(data, index); found {
+					// eat white space lines.
+					line_number++
+				} else {
+					break
+				}
+			}
+
+			if data[index] == '#' {
+				// eat comment lines.
+				index = eatWholeLine(data, index)
+			} else {
+				// now parse the clause list
+				var tokens []clause_item
+				var clause_id uint16
+				clause_id, tokens, line_number, index = l.parseClauseLine(data, line_number, index)
+
+				if len(tokens) == 0 {
+					fmt.Printf("line %3d: Error clause must have at least one token.\n", line_number)
+					worked = false
+					break
+				} else {
+					clauses[clause_id] = tokens
+				}
+
+				// start the next parse
+				index = eatWhiteSpace(data, index)
+			}
+		}
+	}
+
+	return clauses, worked
+}
+
+func (l *LanguageModel) parseClauseLine(data []byte, line_number int, index int) (uint16, []clause_item, int, int) {
+	// read the list of clauses in the file.
+	// TODO: This is wrong - the entry should have different flags from that in the token
+	//       as it is USAGE flags and not descriptive flags, it is solely for flagging the
+	//       use of the token within the clause.
+	var tokens = []clause_item{}
+	var ok bool
+	var found bool = true
+	var clause_id uint16
+
+	if clause_id, index, ok = l.decodeClauseName(data, index); !ok {
+		fmt.Printf("line %3d: Invalid clause name.\n", line_number)
+		index = eatWholeLine(data, index)
+		line_number++
+	} else {
+		for found {
+			var token string
+			var token_flags uint8
+
+			index = eatWhiteSpace(data, index)
+
+			if index, found = getLineToken(data, index, &token, &token_flags); found {
+				// TODO: the token should exist by now. They should have been defined either in
+				//       the prefix or by the preceding rules. So this should do a check for
+				//       undefined rules here.
+				if token_item := l.FindTokenByName(token); token_item != nil {
+					tokens = append(tokens, clause_item{token_flags, token_item})
+					index = eatWhiteSpace(data, index)
+				} else {
+					fmt.Printf("line %3d: Error unknown token '%s' found.\n", line_number, token)
+				}
+			}
+
+			var is_line_ending bool
+			if is_line_ending, index = isLineEnding(data, index); is_line_ending {
+				for is_line_ending {
+					line_number++
+					is_line_ending, index = isLineEnding(data, index)
+				}
+				break
+			}
+		}
+	}
+
+	// TODO: we need to attach the list to the clauses
+	return clause_id, tokens, line_number, index
+}
 
 func findDirectiveSection(data []byte, index int, line_number int, directive string) (int, int, bool) {
 	found := false
@@ -106,7 +197,7 @@ func findDirectiveSection(data []byte, index int, line_number int, directive str
 				if  found, i = isLineEnding(data, i); found {
 					line_number++
 				} else {
-				fmt.Printf("line %3d: directive '%s' must be at the begining of a line.", line_number, directive)
+				fmt.Printf("line %3d: directive '%s' must be at the begining of a line.\n", line_number, directive)
 				break
 			}
 		}
@@ -126,11 +217,11 @@ func (l *LanguageModel) decodeClauseName(data []byte, index int) (uint16, int, b
 	index = eatWhiteSpace(data, index)
 
 	if !found {
-		fmt.Println("clause must start with a name,")
+		fmt.Println("clause must start with a name.")
 
 	} else if index == len(data) || data[index] != '=' {
 
-		fmt.Println("Invalid clause - '=' must follow name", data[index])
+		fmt.Println("Invalid clause, '=' must follow name", data[index])
 
 	} else {
 		// skip the '='
@@ -141,71 +232,6 @@ func (l *LanguageModel) decodeClauseName(data []byte, index int) (uint16, int, b
 	}
 
 	return result, index, worked
-}
-
-func (l *LanguageModel) parseClauseList(data []byte, line_number int, index int) (clause_set, bool) {
-	clauses := make(clause_set)
-	worked  := true
-
-	for index < len(data) {
-		var ok bool
-		var clause_id uint16
-
-		if clause_id, index, ok = l.decodeClauseName(data, index); !ok {
-			fmt.Printf("line %3d: Invalid clause name.\n", line_number)
-			index = eatWholeLine(data, index)
-			line_number++
-			worked = false
-
-		} else {
-
-			// read the list of clauses in the file.
-			// TODO: This is wrong - the entry should have different flags from that in the token
-			//       as it is USAGE flags and not descriptive flags, it is solely for flagging the
-			//       use of the token within the clause.
-			var tokens = []clause_item{}
-			var found bool = true
-
-			for found {
-				var token string
-				var token_flags uint8
-
-				index = eatWhiteSpace(data, index)
-
-				if index, found = getLineToken(data, index, &token, &token_flags); found {
-
-					// TODO: the token should exist by now. They should have been defined either in
-					//       the prefix or by the preceding rules. So this should do a check for
-					//       undefined rules here.
-					tokens = append(tokens, clause_item{token_flags, l.FindTokenByName(token)})
-					index = eatWhiteSpace(data, index)
-				}
-
-				var is_line_ending bool
-				is_line_ending, index = isLineEnding(data, index)
-				if is_line_ending {
-					for is_line_ending {
-						line_number++
-						is_line_ending, index = isLineEnding(data, index)
-					}
-					break
-				}
-			}
-
-			if len(tokens) == 0 {
-				fmt.Println("Error: clause must have at least one token.")
-					worked = false
-					break
-			} else {
-				clauses[clause_id] = tokens		// add the tokens to the clause
-			}
-
-			// start the next parse
-			index = eatWhiteSpace(data, index)
-		}
-	}
-
-	return clauses, worked
 }
 
 func isLineEnding(data []byte, index int) (bool, int) {
@@ -276,10 +302,12 @@ func getNameFromData(data []byte, index int, name *string) (int, bool) {
 			// Is a valid character for a name
 			new_name = append(new_name, data[i])
 
-		} else if data[i] == '%' || data[i] == ' ' || data[i] == '\t' || data[i] == ']' || data[i] == '}' || data[i] == ':' || data[i] == '=' || data[i] == 0x0a || data[i] == 0x0d {
+		} else if data[i] == '%' || data[i] == ' ' || data[i] == '\t' || data[i] == ']' ||
+				  data[i] == '}' || data[i] == ':' || data[i] == '=' || data[i] == 0x0a || data[i] == 0x0d {
 			// found  delimiter of the name
 			*name = string(new_name)
 			result = len(*name) > 0
+
 			break
 		} else {
 			fmt.Println("Invalid character in name:", data[i])
@@ -335,8 +363,7 @@ func getLineToken(data []byte, index int, token *string, flags *uint8) (int, boo
 func (l *LanguageModel) buildParserTree(clauses clause_set) bool {
 	var node_list []*SyntaxNode
 
-	for key, value := range(clauses) {
-		fmt.Println("===>", key, value)
+	for _, _ = range(clauses) {
 		node_list = append(node_list, l.syntax_tree.AddNode())
 	}
 
