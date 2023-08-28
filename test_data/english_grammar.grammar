@@ -1,0 +1,20 @@
+#
+# Name  : english grammer
+# Desc  : The basic grammer file for English (English).
+#
+# Author: Peter Antoine
+# Date  : 08/08/2023
+#
+#                     Copyright (c) 2023 Peter Antoine
+#                            All rights Reserved.
+#                      Released Under the MIT Licence
+
+%tokens
+noun, verb, determinate
+adverb
+adjective
+
+%rules
+sentence = [noun_phrase] verb_phrase
+noun_phrase = [determinate] [adjective] noun
+verb_phrase = [adverb] verb [noun_phrase]
