@@ -45,19 +45,74 @@ func (l *LanguageModel) parseGrammar(data []byte) (clause_set, bool) {
 	result := false
 
 	if index, line_number, ok := l.parseTokenDefinitions(data, 0); ok {
-
 		clauses, result = l.parseClauseList(data, line_number, index)
 	}
 
 	return clauses, result
 }
 
-func findTokenSection(data []byte) index {
+func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int, bool) {
+	worked := false
+	line_number := 0
+
+	if index, line_number, worked = findDirectiveSection(data, index, line_number, "token"); worked {
+		for {
+				var found bool
+				index = eatWhiteSpace(data, index)
+				if found, index = isLineEnding(data, index); found {
+					line_number++
+				}
+
+				var token string
+
+				if index, worked = getNameFromData(data, index, &token); worked {
+					if _, worked = l.AddToken(token); !worked {
+						break;
+					}
+				} else if data[index] == '%' {
+					// end of section
+					worked = true
+					break
+				} else {
+					fmt.Println(string(data[index:]))
+					break
+			}
+		}
+	}
+
+	return index, line_number, worked
+}
+
+
+func findDirectiveSection(data []byte, index int, line_number int, directive string) (int, int, bool) {
+	found := false
 	i := index
+	dir_len := len(directive) + 1
 
 	for {
-		if data[i] == "%"
+		if data[i] == '#' {
+			i = eatWholeLine(data, i)
+
+		} else if data[i] == '%' && (i + dir_len) < len(data) && string(data[i+1:i+dir_len]) == directive {
+			i = eatWhiteSpace(data, i + dir_len)
+			if found, i = isLineEnding(data, i); found {
+				line_number++
+			} else {
+				fmt.Printf("line %3d: directive '%s' must be followed by a line ending and no other chars.\n", line_number, directive)
+			}
+			break
+		} else {
+				i = eatWhiteSpace(data, i)
+				if  found, i = isLineEnding(data, i); found {
+					line_number++
+				} else {
+				fmt.Printf("line %3d: directive '%s' must be at the begining of a line.", line_number, directive)
+				break
+			}
+		}
 	}
+
+	return i, line_number, found
 }
 
 func (l *LanguageModel) decodeClauseName(data []byte, index int) (uint16, int, bool) {
@@ -88,13 +143,6 @@ func (l *LanguageModel) decodeClauseName(data []byte, index int) (uint16, int, b
 	return result, index, worked
 }
 
-func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int, bool) {
-	worked := true
-	line_number := 0
-
-	return index, line_number, worked
-}
-
 func (l *LanguageModel) parseClauseList(data []byte, line_number int, index int) (clause_set, bool) {
 	clauses := make(clause_set)
 	worked  := true
@@ -104,7 +152,7 @@ func (l *LanguageModel) parseClauseList(data []byte, line_number int, index int)
 		var clause_id uint16
 
 		if clause_id, index, ok = l.decodeClauseName(data, index); !ok {
-			fmt.Println("Error: Invalid clause name at line:", line_number)
+			fmt.Printf("line %3d: Invalid clause name.\n", line_number)
 			index = eatWholeLine(data, index)
 			line_number++
 			worked = false
@@ -228,10 +276,10 @@ func getNameFromData(data []byte, index int, name *string) (int, bool) {
 			// Is a valid character for a name
 			new_name = append(new_name, data[i])
 
-		} else if data[i] == ' ' || data[i] == '\t' || data[i] == ']' || data[i] == '}' || data[i] == ':' || data[i] == '=' || data[i] == 0x0a || data[i] == 0x0d {
+		} else if data[i] == '%' || data[i] == ' ' || data[i] == '\t' || data[i] == ']' || data[i] == '}' || data[i] == ':' || data[i] == '=' || data[i] == 0x0a || data[i] == 0x0d {
 			// found  delimiter of the name
 			*name = string(new_name)
-			result = true
+			result = len(*name) > 0
 			break
 		} else {
 			fmt.Println("Invalid character in name:", data[i])
@@ -292,5 +340,5 @@ func (l *LanguageModel) buildParserTree(clauses clause_set) bool {
 		node_list = append(node_list, l.syntax_tree.AddNode())
 	}
 
-	return false
+	return true
 }

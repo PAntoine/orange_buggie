@@ -23,6 +23,27 @@ package language_model
 import "fmt"
 import "testing"
 
+func TestFindTokenSection(t* testing.T) {
+	test_data := "# some comment\n# some other comment\n# %token this is a comment\n#%token so is this\n\n\n \n\t\n\n%token\n"
+	if i, _, ok := findDirectiveSection([]byte(test_data),0, 0, "token"); !ok || (i != 96 && i != 95) {	// One and Two byte line endings.
+		fmt.Println(i, ok)
+		t.Logf("Failed to find a valid token in the correct place.")
+	}
+
+	test_array := []string {
+				" %token\n",
+				"%token :\n",
+				"%token:\n",
+	}
+
+	for _, line := range(test_array) {
+		if _, _, ok := findDirectiveSection([]byte(line),0,0,"token"); ok {
+			t.Logf("Failed, as decoded an invalid line")
+			t.Fail()
+		}
+	}
+}
+
 func TestTokens(t* testing.T) {
 	lm := CreateLanguageModel()
 
@@ -99,7 +120,8 @@ func TestParseGrammarLineEndings(t *testing.T) {
 			}
 
 	for _, array := range(test_cases) {
-		if _, ok := lm.parseGrammar(array); !ok {
+		line_number := 0
+		if _, ok := lm.parseClauseList(array, line_number, 0); !ok {
 			t.Logf("Failed to properly decode line endings.")
 			t.Logf("test case: %s", array)
 			t.Fail()
@@ -123,18 +145,36 @@ func TestParseGrammar(t *testing.T) {
 		}
 
 	for _, line := range(test_cases) {
-		if _, ok := lm.parseGrammar([]byte(line)); !ok {
+		line_number := 0
+		if _, ok := lm.parseClauseList([]byte(line), line_number, 0); !ok {
 			t.Logf("Failed to parse name, test case: %s", line)
 			t.Fail()
-			fmt.Println(line)
-			fmt.Println(lm.parseGrammar([]byte(line)))
-			fmt.Println("----------------------------------")
 		}
 	}
 
+	line_number := 0
 	negative_test := "name4 name = test\n"
-	if _, ok := lm.parseGrammar([]byte(negative_test)); ok {
+	if _, ok := lm.parseClauseList([]byte(negative_test), line_number, 0); ok {
 		t.Logf("Parsed a line it should not, test case: %s", negative_test)
+		t.Fail()
+	}
+}
+
+func TestParseTokenSection(t *testing.T) {
+	lm := CreateLanguageModel()
+
+	test_model := "%token\none two three\nfour\nfive six\nseven eight nine ten\n%rules\n"
+
+	if _,_,ok := lm.parseTokenDefinitions([]byte(test_model), 0); !ok {
+		t.Logf("Failed to parse the token defintions")
+		t.Fail()
+	}
+
+	// duplicate token test
+	test_model = "%token\none two three\nfour\none six\nseven eight nine ten\n%rules\n"
+
+	if _,_,ok := lm.parseTokenDefinitions([]byte(test_model), 0); ok {
+		t.Logf("Failed to detect the duplicate token")
 		t.Fail()
 	}
 }
@@ -143,7 +183,8 @@ func TestLoadLanguageModel(t *testing.T) {
 	test_model := "name_name = {test} [test1]\n\n\nname_name1=test\n"
 
 	lm := CreateLanguageModel()
-	if clauses, worked := lm.parseGrammar([]byte(test_model)); !worked {
+	line_number := 0
+	if clauses, worked := lm.parseClauseList([]byte(test_model), line_number, 0); !worked {
 		t.Logf("Failed to parse the grammer.")
 		t.FailNow()
 	} else {
