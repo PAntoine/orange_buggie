@@ -26,14 +26,13 @@ import "testing"
 func TestFindTokenSection(t* testing.T) {
 	test_data := "# some comment\n# some other comment\n# %token this is a comment\n#%token so is this\n\n\n \n\t\n\n%token\n"
 	if i, _, ok := findDirectiveSection([]byte(test_data),0, 0, "token"); !ok || (i != 96 && i != 95) {	// One and Two byte line endings.
-		fmt.Println(i, ok)
 		t.Logf("Failed to find a valid token in the correct place.")
 	}
 
 	test_array := []string {
-				" %token\n",
-				"%token :\n",
-				"%token:\n",
+				" %tokens\n",
+				"%tokens :\n",
+				"%tokens:\n",
 	}
 
 	for _, line := range(test_array) {
@@ -146,6 +145,7 @@ func TestParseGrammar(t *testing.T) {
 			"name_name8 = test test1\n\nname_namec=test\n",
 			"name_name9 = test test1\n\n\nname_named=test\n",
 			"name_namea = {test} [test1]\n\n\nname_namee=test\n",
+			"name_namef = [{test}] [test1]\n\n\nname_nameh=test\n",
 		}
 
 	for _, line := range(test_cases) {
@@ -167,7 +167,7 @@ func TestParseGrammar(t *testing.T) {
 func TestParseTokenSection(t *testing.T) {
 	lm := CreateLanguageModel()
 
-	test_model := "%token\none two three\nfour\nfive six\nseven eight nine ten\n%rules\n"
+	test_model := "%tokens\none two three\nfour\nfive six\nseven eight nine ten\n%rules\n"
 
 	if _,_,ok := lm.parseTokenDefinitions([]byte(test_model), 0); !ok {
 		t.Logf("Failed to parse the token defintions")
@@ -175,7 +175,7 @@ func TestParseTokenSection(t *testing.T) {
 	}
 
 	// duplicate token test
-	test_model = "%token\none two three\nfour\none six\nseven eight nine ten\n%rules\n"
+	test_model = "%tokens\none two three\nfour\none six\nseven eight nine ten\n%rules\n"
 
 	if _,_,ok := lm.parseTokenDefinitions([]byte(test_model), 0); ok {
 		t.Logf("Failed to detect the duplicate token")
@@ -199,5 +199,14 @@ func TestLoadLanguageModel(t *testing.T) {
 			t.Logf("Failed to build parser tree.");
 			t.FailNow()
 		}
+	}
+}
+
+func TestLoadLanguageModelFile(t *testing.T) {
+	lm := CreateLanguageModel()
+
+	if !lm.LoadLanguageModel("../../test_data/english_grammar.grammar") {
+		t.Logf("Failed to load language model file.");
+		t.FailNow()
 	}
 }

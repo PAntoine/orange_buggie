@@ -30,10 +30,9 @@ func (l *LanguageModel) LoadLanguageModel(filename string) bool {
 
 	if err != nil {
 		fmt.Println("Error: failed to read file '", filename , "'")
-	} else {
-		if clauses, worked := l.parseGrammar(data); worked {
-			result = l.buildParserTree(clauses)
-		}
+
+	} else if clauses, worked := l.parseGrammar(data); worked {
+		result = l.buildParserTree(clauses)
 	}
 
 	return result
@@ -45,8 +44,12 @@ func (l *LanguageModel) parseGrammar(data []byte) (clause_set, bool) {
 	result := false
 
 	if index, line_number, ok := l.parseTokenDefinitions(data, 0); ok {
+		fmt.Println("-=->", clauses, result)
+
 		clauses, result = l.parseClauseList(data, line_number, index)
 	}
+
+	fmt.Println("--->", clauses, result)
 
 	return clauses, result
 }
@@ -55,12 +58,17 @@ func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int,
 	worked := false
 	line_number := 0
 
-	if index, line_number, worked = findDirectiveSection(data, index, line_number, "token"); worked {
+	if index, line_number, worked = findDirectiveSection(data, index, line_number, "tokens"); worked {
 		for {
 				var found bool
 				index = eatWhiteSpace(data, index)
-				if found, index = isLineEnding(data, index); found {
-					line_number++
+				for {
+					if found, index = isLineEnding(data, index); found {
+						index = eatWhiteSpace(data, index)
+						line_number++
+					} else {
+						break
+					}
 				}
 
 				var token string
@@ -74,7 +82,7 @@ func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int,
 					worked = true
 					break
 				} else {
-					fmt.Println(string(data[index:]))
+					fmt.Println(data[index], string(data[index:]))
 					break
 			}
 		}
@@ -128,10 +136,6 @@ func (l *LanguageModel) parseClauseList(data []byte, line_number int, index int)
 }
 
 func (l *LanguageModel) parseClauseLine(data []byte, line_number int, index int) (uint16, []clause_item, int, int) {
-	// read the list of clauses in the file.
-	// TODO: This is wrong - the entry should have different flags from that in the token
-	//       as it is USAGE flags and not descriptive flags, it is solely for flagging the
-	//       use of the token within the clause.
 	var tokens = []clause_item{}
 	var ok bool
 	var found bool = true
@@ -149,9 +153,6 @@ func (l *LanguageModel) parseClauseLine(data []byte, line_number int, index int)
 			index = eatWhiteSpace(data, index)
 
 			if index, found = getLineToken(data, index, &token, &token_flags); found {
-				// TODO: the token should exist by now. They should have been defined either in
-				//       the prefix or by the preceding rules. So this should do a check for
-				//       undefined rules here.
 				if token_item := l.FindTokenByName(token); token_item != nil {
 					tokens = append(tokens, clause_item{token_flags, token_item})
 					index = eatWhiteSpace(data, index)
@@ -171,7 +172,6 @@ func (l *LanguageModel) parseClauseLine(data []byte, line_number int, index int)
 		}
 	}
 
-	// TODO: we need to attach the list to the clauses
 	return clause_id, tokens, line_number, index
 }
 
@@ -326,35 +326,40 @@ func getLineToken(data []byte, index int, token *string, flags *uint8) (int, boo
 
 	*flags = 0
 
-	if index < len(data) {
-		switch(data[index]) {
-			case '{':	*flags |= CF_MULIPLE;  index++;
-			case '[':	*flags |= CF_OPTIONAL; index++
-		}
+	if index < len(data) && data[index] == '[' {
+		*flags |= CF_OPTIONAL
+		index++
+	}
 
-		offset, worked = getNameFromData(data, index, token)
+	if index < len(data) && data[index] == '{' {
+		*flags |= CF_MULIPLE
+		index++
+	}
 
-		offset = eatWhiteSpace(data, offset)
+	offset, worked = getNameFromData(data, index, token)
 
-		if worked {
-			if (*flags & CF_MULIPLE) == CF_MULIPLE {
-				if data[offset] == '}' {
-					offset++
-					offset = eatWhiteSpace(data, offset)
-					result = true
-				}
+	offset = eatWhiteSpace(data, offset)
 
-			} else if (*flags & CF_OPTIONAL) == CF_OPTIONAL {
-				if data[offset] == ']' {
-					offset++
-					offset = eatWhiteSpace(data, offset)
-					result = true
-				}
-
-			} else {
+	if worked {
+		if index < len(data) && (*flags & CF_MULIPLE) == CF_MULIPLE {
+			if data[offset] == '}' {
+				offset++
+				offset = eatWhiteSpace(data, offset)
 				result = true
 			}
+
 		}
+
+		if index < len(data) && (*flags & CF_OPTIONAL) == CF_OPTIONAL {
+			if data[offset] == ']' {
+				offset++
+				offset = eatWhiteSpace(data, offset)
+				result = true
+			}
+
+		}
+
+		result = true
 	}
 
 	return offset, result
