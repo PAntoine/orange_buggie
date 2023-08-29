@@ -16,5 +16,5 @@ import "orange_buggie/source/language_model"
 
 func main() {
 	var meh = language_model.CreateLanguageModel()
-	fmt.Println(meh.LoadLanguageModel("en_gb.langmod"))
+	fmt.Println(meh.LoadLanguageModel("test_data/english_grammar.grammar"))
 }

@@ -195,7 +195,7 @@ func TestLoadLanguageModel(t *testing.T) {
 		t.Logf("Failed to parse the grammer.")
 		t.FailNow()
 	} else {
-		if !lm.buildParserTree(clauses) {
+		if !lm.buildSyntaxTree(clauses) {
 			t.Logf("Failed to build parser tree.");
 			t.FailNow()
 		}

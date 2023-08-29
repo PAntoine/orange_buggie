@@ -30,3 +30,13 @@ func (s *SyntaxTree) AddNode() *SyntaxNode {
 	return new (SyntaxNode)
 }
 
+func (l *LanguageModel) buildSyntaxTree(clauses clause_set) bool {
+	var node_list []*SyntaxNode
+
+	for _, _ = range(clauses) {
+		node_list = append(node_list, l.syntax_tree.AddNode())
+	}
+
+	return true
+}
+
