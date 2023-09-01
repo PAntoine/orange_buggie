@@ -49,9 +49,10 @@ func fixupOptionalList(optional_list []*SyntaxNode) {
 func (l *LanguageModel) buildSyntaxGraph(clauses clause_set) bool {
 
 	for cid, items := range(clauses) {
+
 		optional_list := []*SyntaxNode{}
 
-		var prev *SyntaxNode = l.syntax_graph.GetRoot()
+		prev := l.syntax_graph.GetRoot()
 
 		for _, item := range(items) {
 			if len(optional_list) > 0 && (item.flags & CF_OPTIONAL) != CF_OPTIONAL {

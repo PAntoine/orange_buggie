@@ -25,6 +25,8 @@ import "fmt"
 const (
 	CF_MULIPLE	uint8 = 0x01
 	CF_OPTIONAL	uint8 = 0x02
+
+	LMT_CLAUSE	uint16 = 0x8000
 )
 
 type LanguageModel struct {
@@ -61,13 +63,15 @@ func CreateLanguageModel () *LanguageModel {
  *
  * Tokens must be unique.
  */
-func (l *LanguageModel) AddToken(name string) (uint16, bool) {
+func (l *LanguageModel) AddToken(name string, clause bool) (uint16, bool) {
 	result := uint16(0)
 	worked := false
 
 	if _, ok := l.token_map[name]; !ok {
 		result = uint16(len(l.token_map) + 1)
 		worked = true
+
+		if clause { result = result | LMT_CLAUSE }
 
 		l.token_map[name] = result
 	} else {

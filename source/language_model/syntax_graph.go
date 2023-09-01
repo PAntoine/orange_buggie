@@ -20,8 +20,6 @@
 
 package language_model
 
-import "fmt"
-
 type SyntaxGraph struct {
 	root *SyntaxNode
 }
@@ -53,13 +51,10 @@ func (s SyntaxGraph) ParseSyntax(token_list []uint16) uint16 {
 		current := s.root.FindChild(token_list[0])
 
 		if current != nil {
-			for x, item := range(token_list) {
-				fmt.Println("---->", x, item)
+			for _, item := range(token_list[1:]) {
 				if current = current.FindChild(item); current == nil {
 					break
 				}
-
-				fmt.Println("=====> ", current, item, current.GetClause())
 			}
 		}
 

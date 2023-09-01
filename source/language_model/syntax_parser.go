@@ -54,7 +54,7 @@ func (l *LanguageModel) parseTokenDefinitions(data []byte, index int) (int, int,
 				var token string
 
 				if index, worked = getNameFromData(data, index, &token); worked {
-					if _, worked = l.AddToken(token); !worked {
+					if _, worked = l.AddToken(token, false); !worked {
 						break;
 					}
 				} else if data[index] == '%' {
@@ -208,7 +208,8 @@ func (l *LanguageModel) decodeClauseName(data []byte, index int) (uint16, int, b
 		index++
 		index = eatWhiteSpace(data, index)
 
-		result, worked = l.AddToken(name)
+		// add the clause name token
+		result, worked = l.AddToken(name, true)
 	}
 
 	return result, index, worked

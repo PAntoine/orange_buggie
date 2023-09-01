@@ -61,7 +61,7 @@ func TestTokens(t* testing.T) {
 		t.FailNow()
 	}
 
-	if first, ok := lm.AddToken("verb"); !ok {
+	if first, ok := lm.AddToken("verb", false); !ok {
 		t.Logf("Failed to add the first token.")
 		t.FailNow()
 	} else {
@@ -76,12 +76,12 @@ func TestTokens(t* testing.T) {
 		}
 	}
 
-	if _, ok := lm.AddToken("verb"); ok {
+	if _, ok := lm.AddToken("verb", false); ok {
 		t.Logf("Failed as added the same token name twice.");
 		t.FailNow()
 	}
 
-	if first, ok := lm.AddToken("noun"); !ok {
+	if first, ok := lm.AddToken("noun", false); !ok {
 		t.Logf("Failed to add the next token.")
 		t.FailNow()
 	} else {
@@ -112,7 +112,7 @@ func TestGetNameFromData(t* testing.T) {
 
 func TestParseGrammarLineEndings(t *testing.T) {
 	lm := CreateLanguageModel()
-	lm.AddToken("test")
+	lm.AddToken("test", false)
 
 	test_cases := [][]byte{
 				[]byte{110,97,109,101,49,48,61,116,101,115,116,0x0a},
@@ -137,8 +137,8 @@ func TestParseGrammarLineEndings(t *testing.T) {
 func TestParseGrammar(t *testing.T) {
 	lm := CreateLanguageModel()
 
-	lm.AddToken("test")
-	lm.AddToken("test1")
+	lm.AddToken("test", false)
+	lm.AddToken("test1", false)
 
 	test_cases := []string {
 			"name1= test\n",
@@ -192,9 +192,9 @@ func TestLoadLanguageModel(t *testing.T) {
 	test_model := "%rules\nname_name1 = {test} [test1]\n\n\nname_name2=test2\n"
 
 	lm := CreateLanguageModel()
-	lm.AddToken("test")
-	lm.AddToken("test1")
-	lm.AddToken("test2")
+	lm.AddToken("test", false)
+	lm.AddToken("test1", false)
+	lm.AddToken("test2", false)
 
 	line_number := 0
 	if clauses, worked := lm.parseClauseList([]byte(test_model), line_number, 0); !worked {
@@ -226,7 +226,6 @@ func TestLoadLanguageModel(t *testing.T) {
 			item_list = []uint16{item2}
 			fmt.Println(lm.ParseSyntax(item_list), clause_id2)
 		}
-
 	}
 }
 
