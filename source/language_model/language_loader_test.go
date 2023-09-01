@@ -189,11 +189,12 @@ func TestParseTokenSection(t *testing.T) {
 }
 
 func TestLoadLanguageModel(t *testing.T) {
-	test_model := "%rules\nname_name = {test} [test1]\n\n\nname_name1=test\n"
+	test_model := "%rules\nname_name1 = {test} [test1]\n\n\nname_name2=test2\n"
 
 	lm := CreateLanguageModel()
 	lm.AddToken("test")
 	lm.AddToken("test1")
+	lm.AddToken("test2")
 
 	line_number := 0
 	if clauses, worked := lm.parseClauseList([]byte(test_model), line_number, 0); !worked {
@@ -203,7 +204,29 @@ func TestLoadLanguageModel(t *testing.T) {
 		if !lm.buildSyntaxGraph(clauses) {
 			t.Logf("Failed to build parser tree.");
 			t.FailNow()
+		} else {
+			item0, _ := lm.FindTokenByName("test")
+			item1, _ := lm.FindTokenByName("test1")
+			item2, _ := lm.FindTokenByName("test2")
+			clause_id1, _ := lm.FindTokenByName("name_name1")
+			clause_id2, _ := lm.FindTokenByName("name_name2")
+
+			item_list := []uint16{item0, item1}
+			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+
+			item_list = []uint16{item0}
+			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+
+			item_list = []uint16{item1}
+			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+
+			item_list = []uint16{item0, item0, item0}
+			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+
+			item_list = []uint16{item2}
+			fmt.Println(lm.ParseSyntax(item_list), clause_id2)
 		}
+
 	}
 }
 

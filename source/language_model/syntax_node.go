@@ -88,6 +88,24 @@ func (sn *SyntaxNode) AddLink(node *SyntaxNode) bool {
 	}
 }
 
+/* Set Clause ID
+ *
+ * This will set the clause ID for the node.
+ */
 func (sn *SyntaxNode) SetClauseID (id uint16) {
 	sn.clause_id = id
+}
+
+/* Find Child.
+ *
+ * This function will return the child with the id, if it exists.
+ * It will return nil if the child was not found.
+ */
+func (sn *SyntaxNode) FindChild (id uint16) *SyntaxNode {
+	result, _ := sn.children[id]
+	return result
+}
+
+func (sn SyntaxNode) GetClause() uint16 {
+	return sn.clause_id
 }

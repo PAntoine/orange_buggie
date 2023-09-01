@@ -85,6 +85,11 @@ func (l *LanguageModel) buildSyntaxGraph(clauses clause_set) bool {
 			}
 		}
 
+		// If the optional list is not empty then there are terminal optional items.
+		for _, item := range(optional_list) {
+			item.SetClauseID(cid)
+		}
+
 		// At the end of the insert, are there any optional not fixed up?
 		fixupOptionalList(optional_list)
 		optional_list = []*SyntaxNode{}

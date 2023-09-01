@@ -97,3 +97,7 @@ func (l *LanguageModel) FindTokenByName(name string) (uint16, bool) {
 func (l *LanguageModel) IsTokenValid(id uint16) bool {
 	return id != 0 && int(id) <= len(l.token_map)
 }
+
+func (l LanguageModel) ParseSyntax(token_list []uint16) uint16 {
+	return l.syntax_graph.ParseSyntax(token_list)
+}
