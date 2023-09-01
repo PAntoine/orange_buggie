@@ -46,12 +46,17 @@ func TestFindTokenSection(t* testing.T) {
 func TestTokens(t* testing.T) {
 	lm := CreateLanguageModel()
 
-	if lm.FindTokenByID(0) != nil {
+	if lm.IsTokenValid(0) {
 		t.Logf("Failed as found a token when it should not have.")
 		t.FailNow()
 	}
 
-	if found := lm.FindTokenByName("verb"); found != nil {
+	if lm.IsTokenValid(1) {
+		t.Logf("Failed as found a token when it should not have.")
+		t.FailNow()
+	}
+
+	if _, ok := lm.FindTokenByName("verb"); ok {
 		t.Logf("Failed as found a token when it should not have.")
 		t.FailNow()
 	}
@@ -60,12 +65,12 @@ func TestTokens(t* testing.T) {
 		t.Logf("Failed to add the first token.")
 		t.FailNow()
 	} else {
-		if found := lm.FindTokenByID(first); found == nil {
+		if !lm.IsTokenValid(first) {
 			t.Logf("Failed to find just added token by ID.")
 			t.FailNow()
 		}
 
-		if found := lm.FindTokenByName("verb"); found == nil {
+		if _, ok := lm.FindTokenByName("verb"); !ok {
 			t.Logf("Failed to find just added token by Name.")
 			t.FailNow()
 		}
@@ -85,12 +90,12 @@ func TestTokens(t* testing.T) {
 			t.FailNow()
 		}
 
-		if found := lm.FindTokenByID(first); found == nil {
+		if !lm.IsTokenValid(first) {
 			t.Logf("Failed to find just added token by ID.")
 			t.FailNow()
 		}
 
-		if found := lm.FindTokenByName("verb"); found == nil {
+		if _, ok := lm.FindTokenByName("verb"); !ok {
 			t.Logf("Failed to find just added token by Name.")
 			t.FailNow()
 		}
@@ -195,7 +200,7 @@ func TestLoadLanguageModel(t *testing.T) {
 		t.Logf("Failed to parse the grammer.")
 		t.FailNow()
 	} else {
-		if !lm.buildSyntaxTree(clauses) {
+		if !lm.buildSyntaxGraph(clauses) {
 			t.Logf("Failed to build parser tree.");
 			t.FailNow()
 		}

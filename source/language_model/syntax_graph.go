@@ -7,7 +7,7 @@
  *      \____/|_|  \__,_|_| |_|\__, |\___|____/ \__,_|\__, |\__, |_|\___|
  *                              __/ |                  __/ | __/ |       
  *                             |___/                  |___/ |___/        
- * Name  : syntax_tree.go
+ * Name  : syntax_graph.go
  * Desc  : This hold the code to handle the syntax parsing.
  *
  * Author: Peter Antoine
@@ -20,23 +20,23 @@
 
 package language_model
 
-type SyntaxTree struct {
+type SyntaxGraph struct {
+	root *SyntaxNode
 }
 
-type SyntaxNode struct {
+func (s *SyntaxGraph) Initialise () {
+	s.root = CreateSyntaxNode(0)
 }
 
-func (s *SyntaxTree) AddNode() *SyntaxNode {
-	return new (SyntaxNode)
+func (s *SyntaxGraph) GetRoot() *SyntaxNode {
+	return s.root
 }
 
-func (l *LanguageModel) buildSyntaxTree(clauses clause_set) bool {
-	var node_list []*SyntaxNode
+func (s *SyntaxGraph) AddChild (cid uint16) *SyntaxNode {
+	return s.root.AddChild(cid)
+}
 
-	for _, _ = range(clauses) {
-		node_list = append(node_list, l.syntax_tree.AddNode())
-	}
-
-	return true
+func (s *SyntaxGraph) AddOrFindChild (cid uint16) *SyntaxNode {
+	return s.root.AddOrFindChild(cid)
 }
 

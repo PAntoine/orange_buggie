@@ -133,7 +133,7 @@ func (l *LanguageModel) parseClauseLine(data []byte, line_number int, index int)
 			index = eatWhiteSpace(data, index)
 
 			if index, found = getLineToken(data, index, &token, &token_flags); found {
-				if token_item := l.FindTokenByName(token); token_item != nil {
+				if token_item, ok := l.FindTokenByName(token); ok {
 					tokens = append(tokens, clause_item{token_flags, token_item})
 					index = eatWhiteSpace(data, index)
 				} else {
