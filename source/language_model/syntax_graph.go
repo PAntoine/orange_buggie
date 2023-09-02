@@ -47,19 +47,36 @@ func (s SyntaxGraph) StartParse(id uint16) *SyntaxNode {
 func (s SyntaxGraph) ParseSyntax(token_list []uint16) uint16 {
 	result := uint16(0)
 
-	if len(token_list) > 0 {
-		current := s.root.FindChild(token_list[0])
+	match_list := [][]uint16{token_list}
 
-		if current != nil {
-			for _, item := range(token_list[1:]) {
-				if current = current.FindChild(item); current == nil {
-					break
+	for len(match_list) > 0 {
+		if len(match_list[0]) > 0 {
+			current := s.root.FindChild(match_list[0][0])
+
+			if current != nil {
+				index := 1
+
+				for ; index < len(match_list[0]); index++ {
+					if current = current.FindChild(match_list[0][index]); current == nil {
+						break
+					} else if (current.GetClause() != 0) && index != (len(match_list[0]) - 1) {
+						// Ok, we have found a sub-clause in the sentence - let's remember this
+						// if the current node is not the last node in the current search.
+						match_list = append(match_list, append([]uint16{current.GetClause()}, match_list[0][index+1:]...))
+					}
+				}
+
+				if index == len(match_list[0]) && current != nil {
+					result = current.GetClause()
 				}
 			}
 		}
 
-		if current != nil {
-			result = current.GetClause()
+		if result != 0 {
+			break;
+		} else {
+			// take the first item off the list.
+			match_list = match_list[1:]
 		}
 	}
 

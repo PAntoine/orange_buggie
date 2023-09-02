@@ -188,7 +188,7 @@ func TestParseTokenSection(t *testing.T) {
 	}
 }
 
-func TestLoadLanguageModel(t *testing.T) {
+func TestParseSimpleTokenLists(t *testing.T) {
 	test_model := "%rules\nname_name1 = {test} [test1]\n\n\nname_name2=test2\n"
 
 	lm := CreateLanguageModel()
@@ -212,22 +212,77 @@ func TestLoadLanguageModel(t *testing.T) {
 			clause_id2, _ := lm.FindTokenByName("name_name2")
 
 			item_list := []uint16{item0, item1}
-			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+			if lm.ParseSyntax(item_list) != clause_id1 {
+				t.Logf("Failed to parse valid syntax")
+				t.FailNow()
+			}
 
 			item_list = []uint16{item0}
-			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+			if lm.ParseSyntax(item_list) != clause_id1 {
+				t.Logf("Failed to parse valid syntax")
+				t.FailNow()
+			}
 
 			item_list = []uint16{item1}
-			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+			if lm.ParseSyntax(item_list) == clause_id1 {
+				t.Logf("Incorrectly parsed an invalid syntax item.")
+				t.FailNow()
+			}
 
 			item_list = []uint16{item0, item0, item0}
-			fmt.Println(lm.ParseSyntax(item_list), clause_id1)
+			if lm.ParseSyntax(item_list) != clause_id1 {
+				t.Logf("Failed to parse valid syntax")
+				t.FailNow()
+			}
 
 			item_list = []uint16{item2}
-			fmt.Println(lm.ParseSyntax(item_list), clause_id2)
+			if lm.ParseSyntax(item_list) != clause_id2 {
+				t.Logf("Failed to parse valid syntax")
+				t.FailNow()
+			}
 		}
 	}
 }
+
+func TestParseSubClauses(t *testing.T) {
+	test_model := "%rules\nnp=det adj noun\n\n\nvp=[np] verb\n"
+
+	lm := CreateLanguageModel()
+	det, _  := lm.AddToken("det", false)
+	adj, _  := lm.AddToken("adj", false)
+	noun, _ := lm.AddToken("noun", false)
+	verb, _ := lm.AddToken("verb", false)
+
+	line_number := 0
+	if clauses, worked := lm.parseClauseList([]byte(test_model), line_number, 0); !worked {
+		t.Logf("Failed to parse the grammer.")
+		t.FailNow()
+	} else {
+		if !lm.buildSyntaxGraph(clauses) {
+			t.Logf("Failed to build parser tree.");
+			t.FailNow()
+		} else {
+			vp , _ := lm.FindTokenByName("vp")
+			np, _ := lm.FindTokenByName("np")
+
+			test_cases := []struct {clause_id uint16; result bool; phrase []uint16} {
+				{vp, true,  []uint16{verb}},
+				{np, false, []uint16{noun}},
+				{np, true,  []uint16{det,adj,noun}},
+				{vp, true,  []uint16{np,verb}},
+				{vp, true,  []uint16{det,adj,noun,verb}},
+			}
+
+			for _, test := range(test_cases) {
+				if (lm.ParseSyntax(test.phrase) == test.clause_id) != test.result {
+					t.Logf("Testcase failed %d %d", lm.ParseSyntax(test.phrase) ,test.clause_id)
+					t.FailNow()
+				}
+			}
+		}
+	}
+}
+
 
 func TestLoadLanguageModelFile(t *testing.T) {
 	lm := CreateLanguageModel()
